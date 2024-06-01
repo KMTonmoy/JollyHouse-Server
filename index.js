@@ -4,7 +4,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://tonmoyahamed2009:tonmoytoma25@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -25,7 +25,7 @@ async function run() {
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
-        const apertmentCollection = client.db('jollyHouse').collection('apertmentCollection');
+        const apertmentCollection = client.db('jollyHouse').collection('apertment');
 
         // Generate JWT token
         app.post('/jwt', async (req, res) => {
@@ -71,14 +71,18 @@ async function run() {
         });
 
         app.get('/apertment', async (req, res) => {
-
             const cursor = apertmentCollection.find();
             const result = await cursor.toArray();
             res.send(result);
 
         });
 
-
+        app.get('/apertment/:id', async (req, res) => {
+            const { id } = req.params;
+            const query = { _id: new ObjectId(id) };
+            const menuItem = await apertmentCollection.findOne(query);
+            res.send(menuItem);
+        });
 
 
 
