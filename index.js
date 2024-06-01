@@ -1,9 +1,23 @@
-const express = require('express');
-const app = express();
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const express = require('express')
+const app = express()
+require('dotenv').config()
+const cors = require('cors')
+const cookieParser = require('cookie-parser')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
+const jwt = require('jsonwebtoken')
+
+const port = process.env.PORT || 8000
+
+// middleware
+const corsOptions = {
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true,
+    optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
+
+app.use(express.json())
+app.use(cookieParser())
 
 const uri = `mongodb+srv://tonmoyahamed2009:tonmoytoma25@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
@@ -14,28 +28,26 @@ const client = new MongoClient(uri, {
     }
 });
 
-const port = process.env.PORT || 8000;
 
-app.use(cors());
 app.use(express.json());
 
 async function run() {
     try {
-        // await client.connect(); // Connect to MongoDB
+        // await client.connect();
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
-        const appertmentCollection = client.db('jollyHouse').collection('apertment');
+        const apartmentCollection = client.db('jollyHouse').collection('apertment');
+        const userCollection = client.db('jollyHouse').collection('userCollection');
+        const usersCollection = client.db('jollyHouse').collection('users');
 
-        // Generate JWT token
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
             res.send({ token });
         });
 
-        // Middleware to verify JWT token
         const verifyToken = (req, res, next) => {
             const authHeader = req.headers.authorization;
             if (!authHeader) {
@@ -51,10 +63,8 @@ async function run() {
             });
         };
 
-        // Middleware to verify admin role
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
-            const userCollection = client.db('jollyHouse').collection('userCollection');
             const user = await userCollection.findOne({ email });
             if (!user || user.role !== 'admin') {
                 return res.status(403).send({ message: 'Forbidden access' });
@@ -62,13 +72,74 @@ async function run() {
             next();
         };
 
+
+
+
+
+        // -----------------------------------------
+
+        app.put('/user', async (req, res) => {
+            const user = req.body
+
+            const query = { email: user?.email }
+            // check if user already exists in db
+            const isExist = await usersCollection.findOne(query)
+            if (isExist) {
+                if (user.status === 'Requested') {
+                    // if existing user try to change his role
+                    const result = await usersCollection.updateOne(query, {
+                        $set: { status: user?.status },
+                    })
+                    return res.send(result)
+                } else {
+                    // if existing user login again
+                    return res.send(isExist)
+                }
+            }
+
+            // save user for the first time
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    ...user,
+                    timestamp: Date.now(),
+                },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc, options)
+            res.send(result)
+        })
+
+        // get a user info by email from db
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email
+            const result = await usersCollection.findOne({ email })
+            res.send(result)
+        })
+
+         
+        app.patch('/users/update/:email', async (req, res) => {
+            const email = req.params.email
+            const user = req.body
+            const query = { email }
+            const updateDoc = {
+                $set: { ...user, timestamp: Date.now() },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+
+
+        // -----------------------------------------
+
         app.get('/banners', async (req, res) => {
             const cursor = bannerCollection.find();
             const result = await cursor.toArray();
             res.send(result);
         });
+
         app.get('/apartments', async (req, res) => {
-            const cursor = appertmentCollection.find();
+            const cursor = apartmentCollection.find();
             const result = await cursor.toArray();
             res.send(result);
         });
@@ -87,6 +158,21 @@ async function run() {
             } else {
                 const result = await agreementCollection.insertOne(agreementItem);
                 res.send({ success: true, result });
+            }
+        });
+
+        app.get('/logout', async (req, res) => {
+            try {
+                res
+                    .clearCookie('token', {
+                        maxAge: 0,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                    })
+                    .send({ success: true });
+                console.log('Logout successful');
+            } catch (err) {
+                res.status(500).send(err);
             }
         });
 
