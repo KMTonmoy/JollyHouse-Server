@@ -3,8 +3,8 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 const uri = `mongodb+srv://tonmoyahamed2009:tonmoytoma25@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -25,7 +25,8 @@ async function run() {
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
-        const apertmentCollection = client.db('jollyHouse').collection('apertment');
+        const agreementCollection = client.db('jollyHouse').collection('agreement');
+        const appertmentCollection = client.db('jollyHouse').collection('apertment');
 
         // Generate JWT token
         app.post('/jwt', async (req, res) => {
@@ -61,30 +62,33 @@ async function run() {
             next();
         };
 
-
         app.get('/banners', async (req, res) => {
-
             const cursor = bannerCollection.find();
             const result = await cursor.toArray();
             res.send(result);
-
         });
-
-        app.get('/apertment', async (req, res) => {
-            const cursor = apertmentCollection.find();
+        app.get('/apartments', async (req, res) => {
+            const cursor = appertmentCollection.find();
             const result = await cursor.toArray();
             res.send(result);
-
         });
 
-        app.get('/apertment/:id', async (req, res) => {
-            const { id } = req.params;
-            const query = { _id: new ObjectId(id) };
-            const menuItem = await apertmentCollection.findOne(query);
-            res.send(menuItem);
+        app.get('/agreement/:email', async (req, res) => {
+            const email = req.params.email;
+            const agreement = await agreementCollection.findOne({ userEmail: email });
+            res.send({ agreement });
         });
 
-
+        app.post('/agreement', async (req, res) => {
+            const agreementItem = req.body;
+            const existingAgreement = await agreementCollection.findOne({ userEmail: agreementItem.userEmail });
+            if (existingAgreement) {
+                res.send({ success: false, message: 'You have already applied for an apartment agreement.' });
+            } else {
+                const result = await agreementCollection.insertOne(agreementItem);
+                res.send({ success: true, result });
+            }
+        });
 
         app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
