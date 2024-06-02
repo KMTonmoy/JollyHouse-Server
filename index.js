@@ -19,7 +19,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-const uri = `mongodb+srv://tonmoyahamed2009:tonmoytoma25@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -32,13 +32,12 @@ app.use(express.json());
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
         const apertmentCollection = client.db('jollyHouse').collection('apertmentDB');
-        const userCollection = client.db('jollyHouse').collection('userCollection');
         const usersCollection = client.db('jollyHouse').collection('users');
 
         app.post('/jwt', async (req, res) => {
@@ -65,7 +64,7 @@ async function run() {
 
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
-            const user = await userCollection.findOne({ email });
+            const user = await usersCollection.findOne({ email });
             if (!user || user.role !== 'admin') {
                 return res.status(403).send({ message: 'Forbidden access' });
             }
@@ -73,6 +72,18 @@ async function run() {
         };
 
         // -----------------------------------------
+        app.get('/users', async (req, res) => {
+            const users = await usersCollection.find().toArray();
+            res.send(users);
+        });
+
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const result = await usersCollection.findOne({ email });
+            res.send(result);
+        });
+
+
 
         app.put('/user', async (req, res) => {
             const user = req.body;
@@ -101,11 +112,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/user/:email', async (req, res) => {
-            const email = req.params.email;
-            const result = await usersCollection.findOne({ email });
-            res.send(result);
-        });
+
 
         app.patch('/users/update/:email', async (req, res) => {
             const email = req.params.email;
