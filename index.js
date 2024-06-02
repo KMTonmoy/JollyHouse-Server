@@ -6,8 +6,18 @@ require('dotenv').config();
 
 const port = process.env.PORT || 8000;
 
-// middleware
-app.use(cors());
+// Must remove "/" from your production URL
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5173",
+            "https://cardoctor-bd.web.app",
+            "https://cardoctor-bd.firebaseapp.com",
+        ],
+        credentials: true
+    })
+);
+
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -163,6 +173,16 @@ async function run() {
             const agreements = await agreementCollection.find().toArray();
             res.send(agreements);
         });
+
+
+        app.delete('/agreement/:id', async (req, res) => {
+            const { id } = req.params;
+            const query = { _id: new ObjectId(id) };
+            const result = await agreementCollection.deleteOne(query);
+            res.send(result);
+        });
+
+
 
         app.get('/agreement/:email', async (req, res) => {
             const email = req.params.email;
