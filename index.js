@@ -1,22 +1,16 @@
 const express = require('express');
 const app = express();
-require('dotenv').config();
 const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const port = process.env.PORT || 8000;
 
-// Middleware
-app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-    credentials: true,
-}));
-
+// middleware
+app.use(cors());
 app.use(express.json());
-app.use(cookieParser());
 
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -33,14 +27,14 @@ async function run() {
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
-        const apertmentCollection = client.db('jollyHouse').collection('apertmentDB');
+        const apartmentCollection = client.db('jollyHouse').collection('apertmentDB');
         const usersCollection = client.db('jollyHouse').collection('users');
-        const couponsCollection = client.db('jollyHouse').collection('coupons')
+        const couponsCollection = client.db('jollyHouse').collection('coupons');
 
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            console.log(token); // Log only the token
+            console.log(token);
             res.send({ token });
         });
 
@@ -106,6 +100,28 @@ async function run() {
             res.send(result);
         });
 
+        app.patch('/users/:id/role', async (req, res) => {
+            const { id } = req.params;
+            const { role } = req.body;
+
+            try {
+                const result = await usersCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { role: role } }
+                );
+                if (result.modifiedCount === 1) {
+                    res.send({ success: true, message: 'User role updated successfully' });
+                } else {
+                    res.send({ success: false, message: 'User role update failed' });
+                }
+            } catch (error) {
+                console.error('Error updating user role:', error);
+                res.status(500).send({ success: false, message: 'Internal server error' });
+            }
+        });
+
+
+
         app.patch('/users/update/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -138,7 +154,7 @@ async function run() {
 
         // Apartments Endpoints
         app.get('/apartments', async (req, res) => {
-            const apartments = await apertmentCollection.find().toArray();
+            const apartments = await apartmentCollection.find().toArray();
             res.send(apartments);
         });
 
@@ -183,9 +199,19 @@ async function run() {
             console.log(`Server is running on port ${port}`);
         });
 
-    } catch (error) {
-        console.error('Failed to connect to MongoDB:', error);
+    } finally {
+        // Ensure the client connection closes properly on exit
+        process.on('SIGINT', async () => {
+            await client.close();
+            console.log("Disconnected from MongoDB!");
+            process.exit(0);
+        });
     }
 }
 
 run().catch(console.dir);
+
+app.get('/', (req, res) => {
+    res.send('JollyHome is sitting');
+});
+
