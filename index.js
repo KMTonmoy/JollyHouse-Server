@@ -8,13 +8,11 @@ const jwt = require('jsonwebtoken');
 
 const port = process.env.PORT || 8000;
 
-// middleware
-const corsOptions = {
+// Middleware
+app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
-    optionSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+}));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -28,17 +26,16 @@ const client = new MongoClient(uri, {
     }
 });
 
-app.use(express.json());
-
 async function run() {
     try {
-        // await client.connect();
+        await client.connect();
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
         const apertmentCollection = client.db('jollyHouse').collection('apertmentDB');
         const usersCollection = client.db('jollyHouse').collection('users');
+        const couponsCollection = client.db('jollyHouse').collection('coupons')
 
         app.post('/jwt', async (req, res) => {
             const user = req.body;
@@ -71,7 +68,7 @@ async function run() {
             next();
         };
 
-        // -----------------------------------------
+        // Users Endpoints
         app.get('/users', async (req, res) => {
             const users = await usersCollection.find().toArray();
             res.send(users);
@@ -83,12 +80,9 @@ async function run() {
             res.send(result);
         });
 
-
-
         app.put('/user', async (req, res) => {
             const user = req.body;
-
-            const query = { email: user?.email };
+            const query = { email: user?.email, name: user.displayName };
             const isExist = await usersCollection.findOne(query);
             if (isExist) {
                 if (user.status === 'Requested') {
@@ -112,8 +106,6 @@ async function run() {
             res.send(result);
         });
 
-
-
         app.patch('/users/update/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -125,18 +117,35 @@ async function run() {
             res.send(result);
         });
 
-        // -----------------------------------------
-
+        // Banners Endpoints
         app.get('/banners', async (req, res) => {
-            const cursor = bannerCollection.find();
-            const result = await cursor.toArray();
-            res.send(result);
+            const banners = await bannerCollection.find().toArray();
+            res.send(banners);
         });
 
+        // Coupons Endpoints
+        app.get('/coupons', async (req, res) => {
+            const coupons = await couponsCollection.find().toArray();
+            res.send(coupons);
+        });
+
+        app.get('/coupons/:id', async (req, res) => {
+            const { id } = req.params;
+            const query = { _id: new ObjectId(id) };
+            const coupon = await couponsCollection.findOne(query);
+            res.send(coupon);
+        });
+
+        // Apartments Endpoints
         app.get('/apartments', async (req, res) => {
-            const cursor = apertmentCollection.find();
-            const result = await cursor.toArray();
-            res.send(result);
+            const apartments = await apertmentCollection.find().toArray();
+            res.send(apartments);
+        });
+
+        // Agreement Endpoints
+        app.get('/agreement', async (req, res) => {
+            const agreements = await agreementCollection.find().toArray();
+            res.send(agreements);
         });
 
         app.get('/agreement/:email', async (req, res) => {
@@ -149,22 +158,21 @@ async function run() {
             const agreementItem = req.body;
             const existingAgreement = await agreementCollection.findOne({ userEmail: agreementItem.userEmail });
             if (existingAgreement) {
-                res.send({ success: false, message: 'You have already applied for an apertmentDB agreement.' });
+                res.send({ success: false, message: 'You have already applied for an apartment agreement.' });
             } else {
                 const result = await agreementCollection.insertOne(agreementItem);
                 res.send({ success: true, result });
             }
         });
 
+        // Logout Endpoint
         app.get('/logout', async (req, res) => {
             try {
-                res
-                    .clearCookie('token', {
-                        maxAge: 0,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                    })
-                    .send({ success: true });
+                res.clearCookie('token', {
+                    maxAge: 0,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                }).send({ success: true });
                 console.log('Logout successful');
             } catch (err) {
                 res.status(500).send(err);
