@@ -1,23 +1,23 @@
-const express = require('express')
-const app = express()
-require('dotenv').config()
-const cors = require('cors')
-const cookieParser = require('cookie-parser')
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
-const jwt = require('jsonwebtoken')
+const express = require('express');
+const app = express();
+require('dotenv').config();
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 
-const port = process.env.PORT || 8000
+const port = process.env.PORT || 8000;
 
 // middleware
 const corsOptions = {
     origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
     optionSuccessStatus: 200,
-}
-app.use(cors(corsOptions))
+};
+app.use(cors(corsOptions));
 
-app.use(express.json())
-app.use(cookieParser())
+app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://tonmoyahamed2009:tonmoytoma25@cluster0.wamxmmb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
@@ -28,23 +28,23 @@ const client = new MongoClient(uri, {
     }
 });
 
-
 app.use(express.json());
 
 async function run() {
     try {
-        // await client.connect();
+        await client.connect();
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
-        const apartmentCollection = client.db('jollyHouse').collection('apertment');
+        const apertmentCollection = client.db('jollyHouse').collection('apertmentDB');
         const userCollection = client.db('jollyHouse').collection('userCollection');
         const usersCollection = client.db('jollyHouse').collection('users');
 
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            console.log(token); // Log only the token
             res.send({ token });
         });
 
@@ -72,63 +72,51 @@ async function run() {
             next();
         };
 
-
-
-
-
         // -----------------------------------------
 
         app.put('/user', async (req, res) => {
-            const user = req.body
+            const user = req.body;
 
-            const query = { email: user?.email }
-            // check if user already exists in db
-            const isExist = await usersCollection.findOne(query)
+            const query = { email: user?.email };
+            const isExist = await usersCollection.findOne(query);
             if (isExist) {
                 if (user.status === 'Requested') {
-                    // if existing user try to change his role
                     const result = await usersCollection.updateOne(query, {
                         $set: { status: user?.status },
-                    })
-                    return res.send(result)
+                    });
+                    return res.send(result);
                 } else {
-                    // if existing user login again
-                    return res.send(isExist)
+                    return res.send(isExist);
                 }
             }
 
-            // save user for the first time
-            const options = { upsert: true }
+            const options = { upsert: true };
             const updateDoc = {
                 $set: {
                     ...user,
                     timestamp: Date.now(),
                 },
-            }
-            const result = await usersCollection.updateOne(query, updateDoc, options)
-            res.send(result)
-        })
+            };
+            const result = await usersCollection.updateOne(query, updateDoc, options);
+            res.send(result);
+        });
 
-        // get a user info by email from db
         app.get('/user/:email', async (req, res) => {
-            const email = req.params.email
-            const result = await usersCollection.findOne({ email })
-            res.send(result)
-        })
+            const email = req.params.email;
+            const result = await usersCollection.findOne({ email });
+            res.send(result);
+        });
 
-         
         app.patch('/users/update/:email', async (req, res) => {
-            const email = req.params.email
-            const user = req.body
-            const query = { email }
+            const email = req.params.email;
+            const user = req.body;
+            const query = { email };
             const updateDoc = {
                 $set: { ...user, timestamp: Date.now() },
-            }
-            const result = await usersCollection.updateOne(query, updateDoc)
-            res.send(result)
-        })
-
-
+            };
+            const result = await usersCollection.updateOne(query, updateDoc);
+            res.send(result);
+        });
 
         // -----------------------------------------
 
@@ -139,7 +127,7 @@ async function run() {
         });
 
         app.get('/apartments', async (req, res) => {
-            const cursor = apartmentCollection.find();
+            const cursor = apertmentCollection.find();
             const result = await cursor.toArray();
             res.send(result);
         });
@@ -154,7 +142,7 @@ async function run() {
             const agreementItem = req.body;
             const existingAgreement = await agreementCollection.findOne({ userEmail: agreementItem.userEmail });
             if (existingAgreement) {
-                res.send({ success: false, message: 'You have already applied for an apartment agreement.' });
+                res.send({ success: false, message: 'You have already applied for an apertmentDB agreement.' });
             } else {
                 const result = await agreementCollection.insertOne(agreementItem);
                 res.send({ success: true, result });
