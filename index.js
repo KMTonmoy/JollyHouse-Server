@@ -273,7 +273,7 @@ async function run() {
             console.log("Disconnected from MongoDB!");
             process.exit(0);
         });
-    }  
+    }
 }
 
 run().catch(console.dir);
