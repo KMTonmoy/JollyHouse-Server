@@ -84,9 +84,9 @@ async function run() {
         });
 
         app.patch('/users/:email', async (req, res) => {
-            const { email } = req.params;  
+            const { email } = req.params;
             const { role } = req.body;
-            const filter = { email: email };  
+            const filter = { email: email };
             const updateDoc = {
                 $set: { role },
             };
@@ -94,7 +94,7 @@ async function run() {
                 const result = await usersCollection.updateOne(filter, updateDoc);
                 res.send(result);
             } catch (error) {
-                res.status(500).send({ error: 'Failed to update user role' });  
+                res.status(500).send({ error: 'Failed to update user role' });
             }
         });
 
@@ -141,6 +141,30 @@ async function run() {
             res.send(coupons);
         });
 
+
+
+        app.patch('/coupons/:id', async (req, res) => {
+            const { id } = req.params;
+            const coupon = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    code: coupon.code,
+                    discount: coupon.discount,
+                    description: coupon.description,
+                },
+            };
+            try {
+                const result = await couponsCollection.updateOne(filter, updateDoc);
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: 'Coupon not found' });
+                }
+                res.send({ acknowledged: true });
+            } catch (error) {
+                console.error('Error updating coupon:', error);
+                res.status(500).send({ message: 'Failed to update coupon' });
+            }
+        });
 
         app.post('/coupons', async (req, res) => {
             const coupon = req.body;
