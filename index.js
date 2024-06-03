@@ -6,7 +6,6 @@ require('dotenv').config();
 
 const port = process.env.PORT || 8000;
 
-// Must remove "/" from your production URL
 app.use(
     cors({
         origin: [
@@ -153,6 +152,20 @@ async function run() {
         app.get('/coupons', async (req, res) => {
             const coupons = await couponsCollection.find().toArray();
             res.send(coupons);
+        });
+
+
+        app.post('/coupons', async (req, res) => {
+            const coupon = req.body;
+            const result = await couponsCollection.insertOne(coupon);
+            res.send(result);
+        });
+
+        app.delete('/coupons/:id',  async (req, res) => {
+            const { id } = req.params;
+            const query = { _id: new ObjectId(id) };
+            const result = await couponsCollection.deleteOne(query);
+            res.send(result);
         });
 
         app.get('/coupons/:id', async (req, res) => {
