@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
         console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
@@ -83,6 +83,24 @@ async function run() {
             res.send(result);
         });
 
+        app.patch('/users/:email', async (req, res) => {
+            const { email } = req.params;  
+            const { role } = req.body;
+            const filter = { email: email };  
+            const updateDoc = {
+                $set: { role },
+            };
+            try {
+                const result = await usersCollection.updateOne(filter, updateDoc);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update user role' });  
+            }
+        });
+
+
+
+
         app.put('/user', async (req, res) => {
             const user = req.body;
             const query = { email: user?.email, name: user.displayName };
@@ -109,38 +127,7 @@ async function run() {
             res.send(result);
         });
 
-        app.patch('/users/:id/role', async (req, res) => {
-            const { id } = req.params;
-            const { role } = req.body;
 
-            try {
-                const result = await usersCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: { role: role } }
-                );
-                if (result.modifiedCount === 1) {
-                    res.send({ success: true, message: 'User role updated successfully' });
-                } else {
-                    res.send({ success: false, message: 'User role update failed' });
-                }
-            } catch (error) {
-                console.error('Error updating user role:', error);
-                res.status(500).send({ success: false, message: 'Internal server error' });
-            }
-        });
-
-
-
-        app.patch('/users/update/:email', async (req, res) => {
-            const email = req.params.email;
-            const user = req.body;
-            const query = { email };
-            const updateDoc = {
-                $set: { ...user, timestamp: Date.now() },
-            };
-            const result = await usersCollection.updateOne(query, updateDoc);
-            res.send(result);
-        });
 
         // Banners Endpoints
         app.get('/banners', async (req, res) => {
@@ -161,7 +148,7 @@ async function run() {
             res.send(result);
         });
 
-        app.delete('/coupons/:id',  async (req, res) => {
+        app.delete('/coupons/:id', async (req, res) => {
             const { id } = req.params;
             const query = { _id: new ObjectId(id) };
             const result = await couponsCollection.deleteOne(query);
@@ -179,6 +166,29 @@ async function run() {
         app.get('/apartments', async (req, res) => {
             const apartments = await apartmentCollection.find().toArray();
             res.send(apartments);
+        });
+
+
+        app.get('/apartments/:id', async (req, res) => {
+            const { id } = req.params;
+            const query = { _id: new ObjectId(id) };
+            const apertment = await apartmentCollection.findOne(query);
+            res.send(apertment);
+        });
+
+        app.patch('/apartments/:id', async (req, res) => {
+            const { id } = req.params;
+            const { status } = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: { status },
+            };
+            try {
+                const result = await apartmentCollection.updateOne(filter, updateDoc);
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ error: 'Failed to update apartment status' });
+            }
         });
 
         // Agreement Endpoints
