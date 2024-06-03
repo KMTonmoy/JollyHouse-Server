@@ -273,7 +273,7 @@ async function run() {
             console.log("Disconnected from MongoDB!");
             process.exit(0);
         });
-    }
+    }  
 }
 
 run().catch(console.dir);
@@ -281,4 +281,3 @@ run().catch(console.dir);
 app.get('/', (req, res) => {
     res.send('JollyHome is sitting');
 });
-
