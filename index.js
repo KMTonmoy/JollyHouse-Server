@@ -85,18 +85,40 @@ async function run() {
 
         app.patch('/users/:email', async (req, res) => {
             const { email } = req.params;
-            const { role } = req.body;
+            const { role, ids, userEmail, userName, floorNo, blockName, apartmentNo, rent } = req.body;
+
             const filter = { email: email };
             const updateDoc = {
-                $set: { role },
+                $set: {
+                    role,
+                    ids,
+                    userEmail,
+                    userName,
+                    floorNo,
+                    blockName,
+                    apartmentNo,
+                    rent
+                },
             };
+
             try {
                 const result = await usersCollection.updateOne(filter, updateDoc);
-                res.send(result);
+
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ error: 'User not found' });
+                }
+
+                if (result.modifiedCount === 0) {
+                    return res.status(400).send({ message: 'No changes made to the user' });
+                }
+
+                res.send({ message: 'User updated successfully', result });
             } catch (error) {
-                res.status(500).send({ error: 'Failed to update user role' });
+                console.error(error);
+                res.status(500).send({ error: 'Failed to update user' });
             }
         });
+
 
 
 
