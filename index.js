@@ -39,6 +39,7 @@ async function run() {
         const apartmentCollection = client.db('jollyHouse').collection('apertmentDB');
         const usersCollection = client.db('jollyHouse').collection('users');
         const couponsCollection = client.db('jollyHouse').collection('coupons');
+        const anouncementCollection = client.db('jollyHouse').collection('announcements');
 
         app.post('/jwt', async (req, res) => {
             const user = req.body;
@@ -120,9 +121,6 @@ async function run() {
         });
 
 
-
-
-
         app.put('/user', async (req, res) => {
             const user = req.body;
             const query = { email: user?.email, name: user.displayName };
@@ -156,6 +154,46 @@ async function run() {
             const banners = await bannerCollection.find().toArray();
             res.send(banners);
         });
+
+        // Announcement Endpoints
+        app.get('/announcement', async (req, res) => {
+            const users = await anouncementCollection.find().toArray();
+            res.send(users);
+        });
+
+
+     
+
+
+
+
+        app.patch('/announcements/:id', async (req, res) => {
+            const { id } = req.params;
+            const announce = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: announce.status
+                },
+            };
+            try {
+                const result = await anouncementCollection.updateOne(filter, updateDoc);
+                if (result.matchedCount === 0) {
+                    return res.status(404).send({ message: 'announce not found' });
+                }
+                res.send({ acknowledged: true });
+            } catch (error) {
+                console.error('Error updating announce:', error);
+                res.status(500).send({ message: 'Failed to update announce' });
+            }
+        });
+
+        app.post('/announcement', async (req, res) => {
+            const announce = req.body;
+            const result = await anouncementCollection.insertOne(announce);
+            res.send(result);
+        });
+ 
 
         // Coupons Endpoints
         app.get('/coupons', async (req, res) => {
