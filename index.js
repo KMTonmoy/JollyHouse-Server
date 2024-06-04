@@ -162,7 +162,7 @@ async function run() {
         });
 
 
-     
+
 
 
 
@@ -193,7 +193,7 @@ async function run() {
             const result = await anouncementCollection.insertOne(announce);
             res.send(result);
         });
- 
+
 
         // Coupons Endpoints
         app.get('/coupons', async (req, res) => {
