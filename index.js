@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // await client.connect();
-        console.log("Connected to MongoDB");
+        // console.log("Connected to MongoDB");
 
         const bannerCollection = client.db('jollyHouse').collection('bannerCollection');
         const agreementCollection = client.db('jollyHouse').collection('agreement');
@@ -44,7 +44,7 @@ async function run() {
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            console.log(token);
+            // console.log(token);
             res.send({ token });
         });
 
@@ -86,7 +86,7 @@ async function run() {
 
         app.patch('/users/:email', async (req, res) => {
             const { email } = req.params;
-            const { role, ids, userEmail, userName, floorNo, blockName, apartmentNo, rent } = req.body;
+            const { role, ids, userEmail, userName, floorNo, blockName, apartmentNo, rent, agreementAcceptDate } = req.body;
 
             const filter = { email: email };
             const updateDoc = {
@@ -98,7 +98,8 @@ async function run() {
                     floorNo,
                     blockName,
                     apartmentNo,
-                    rent
+                    rent,
+                    agreementAcceptDate
                 },
             };
 
@@ -316,21 +317,21 @@ async function run() {
                     secure: process.env.NODE_ENV === 'production',
                     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
                 }).send({ success: true });
-                console.log('Logout successful');
+                // console.log('Logout successful');
             } catch (err) {
                 res.status(500).send(err);
             }
         });
 
         app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
+            // console.log(`Server is running on port ${port}`);
         });
 
     } finally {
         // Ensure the client connection closes properly on exit
         process.on('SIGINT', async () => {
             await client.close();
-            console.log("Disconnected from MongoDB!");
+            // console.log("Disconnected from MongoDB!");
             process.exit(0);
         });
     }
