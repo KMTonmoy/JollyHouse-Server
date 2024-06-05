@@ -286,6 +286,7 @@ async function run() {
         });
 
 
+
         app.delete('/agreement/:id', async (req, res) => {
             const { id } = req.params;
             const query = { _id: new ObjectId(id) };
@@ -329,7 +330,7 @@ async function run() {
         // =====================================================================
 
         // Payment related API
-        app.post('/create-payment-intent',  async (req, res) => {
+        app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body;
             const amount = Math.round(price * 100);
             const paymentIntent = await stripe.paymentIntents.create({
@@ -340,13 +341,16 @@ async function run() {
             res.send({ clientSecret: paymentIntent.client_secret });
         });
 
+        app.get('/payments', async (req, res) => {
+            const agreements = await paymentCollection.find().toArray();
+            res.send(agreements);
+        });
+
+ 
         app.get('/payments/:email', async (req, res) => {
-            const { email } = req.params;
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: 'Forbidden access' });
-            }
-            const payments = await paymentCollection.find({ email }).toArray();
-            res.send(payments);
+            const email = req.params.email;
+            const result = await paymentCollection.find({ email }).toArray();
+            res.send(result);
         });
 
         app.post('/payments', async (req, res) => {
@@ -366,9 +370,9 @@ async function run() {
     } finally {
         // Ensure the client connection closes properly on exit
         process.on('SIGINT', async () => {
-            await client.close();
+            // await client.close();
             // console.log("Disconnected from MongoDB!");
-            process.exit(0);
+            // process.exit(0);
         });
     }
 }
