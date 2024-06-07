@@ -12,8 +12,8 @@ app.use(
         origin: [
             "http://localhost:5173",
             "http://localhost:5174",
-            "http://localhost:5175",
-
+            "https://assignment12jollyhome.netlify.app",
+            "https://api.imgbb.com/1/upload?key=19c9072b07556f7849d6dea75b7e834d"
         ],
         credentials: true
     })
@@ -30,6 +30,7 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
 
 async function run() {
     try {
@@ -346,7 +347,7 @@ async function run() {
             res.send(agreements);
         });
 
- 
+
         app.get('/payments/:email', async (req, res) => {
             const email = req.params.email;
             const result = await paymentCollection.find({ email }).toArray();
